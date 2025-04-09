@@ -1,8 +1,9 @@
 from utils.ManageArticles import ManageArticles
 from utils.functions import validateDate, convertDate
 from items import JobItem
+from spiders.domains.Domain import Domain
 
-class TheNextWeb ():
+class TheNextWeb (Domain):
     def __init__(self):
         self.manageArticles = ManageArticles()
         self.origin = 'wired'
