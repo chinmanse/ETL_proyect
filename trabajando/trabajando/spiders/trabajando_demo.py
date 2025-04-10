@@ -2,43 +2,43 @@ import scrapy
 from datetime import datetime
 from trabajando.items import JobItem 
 import uuid
-from data_web import CITIES , BASE_URLS, ALLOWED_DOMAINS, HEADERS
+from trabajando.spiders.data_web import CITIES , BASE_URLS, ALLOWED_DOMAINS #, HEADERS
 import time 
-from domains.theNextWeb import TheNextWeb
-from domains.parade import Parade
-from domains.wired import Wired
+from trabajando.spiders.domains.theNextWeb import TheNextWeb
+from trabajando.spiders.domains.parade import Parade
+from trabajando.spiders.domains.wired import Wired
 
 class TrabajandoDemoSpider(scrapy.Spider):
     name = "trabajando_demo"
     allowed_domains = ALLOWED_DOMAINS 
     start_urls = []
     keep_paginas = []
-    max_paginas = 7
+    # max_paginas = 7
     service = None
 
     def start_requests(self):
             """Generate initial requests with proper user agent headers."""
+            self.nextService = TheNextWeb()
+            self.paradeService = Parade()
+            self.wiredService = Wired()
             for url in BASE_URLS:
-                if 'thenextweb' in url:
-                    self.service = TheNextWeb()
+                if 'thenextweb.com' in url:
                     yield scrapy.Request(
                             url = url,
                             callback=self.parse,
-                            headers=HEADERS
+                            # headers=HEADERS
                             )
-                elif 'parade' in url:
-                    self.service = Parade()
+                elif 'parade.com' in url:
                     yield scrapy.Request(
                             url = url,
                             callback=self.parse,
-                            headers=HEADERS
+                            # headers=HEADERS
                             )
-                elif 'wired' in url:
-                    self.service = Wired()
+                elif 'www.wired.com' in url:
                     yield scrapy.Request(
                             url = url,
                             callback=self.parse,
-                            headers=HEADERS
+                            # headers=HEADERS
                             )
                 time.sleep(1)
                     
@@ -52,7 +52,14 @@ class TrabajandoDemoSpider(scrapy.Spider):
         print("Parsing")
 
         url_site = response.url
-        yield from self.service.parse(response)
+        print('Visitando', url_site)
+        if 'thenextweb.com' in url_site:
+            yield from  self.nextService.parse(response)
+        elif 'parade.com' in url_site:
+            yield from  self.paradeService.parse(response)
+        elif 'www.wired.com' in url_site:
+            yield from  self.wiredService.parse(response)
+        # yield from self.service.parse(response)
 
         # if 'trabajando' in url_site:
         #     job_posting = response.css('div.views-row') 

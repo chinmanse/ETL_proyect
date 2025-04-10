@@ -4,37 +4,38 @@
 # https://docs.scrapy.org/en/latest/topics/items.html
 
 import scrapy
+from trabajando.utils.functions import convertDate
 
 class TrabajandoItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     pass
 
-
-def select_data(value):
-    if isinstance(value, tuple) and len(value) > 0:
-        return value[0]
+def proccess_array(value):
+    print(type(value))
+    if isinstance(value, list) and len(value) > 0:
+        for elem in value:
+            elem = proccess_text(elem)
     return value
 
+
+def proccess_text(value):
+    if isinstance(value, str):
+        return value.strip()
+    return value
+    
+def process_date(value):
+    return convertDate(value) 
+
 class JobItem(scrapy.Item):
-    title  = scrapy.Field(serializer = select_data)
-    link = scrapy.Field(serializer = select_data)
-    image = scrapy.Field(serializer = select_data)
-    resume = scrapy.Field(serializer = select_data)
-    date_published = scrapy.Field(serializer = select_data)
-    author = scrapy.Field(serializer = select_data)
-    segments = scrapy.Field(serializer = select_data)
-   
-    # data_id = scrapy.Field(serializer=select_data) 
-    # url = scrapy.Field(serializer=select_data)
-    # title = scrapy.Field(serializer=select_data)
-    # company = scrapy.Field(serializer=select_data)
-    # location = scrapy.Field(serializer=select_data) 
-    # type_job = scrapy.Field(serializer=select_data)
-    # date_published = scrapy.Field(serializer=select_data) 
-    # job_description = scrapy.Field(serializer=select_data)
-    # date_expiration = scrapy.Field(serializer=select_data)
-    # date_saved = scrapy.Field(serializer=select_data)
+    origin  = scrapy.Field(serializer = proccess_text)
+    title  = scrapy.Field(serializer = proccess_text)
+    link = scrapy.Field(serializer = proccess_text)
+    image = scrapy.Field(serializer = proccess_text)
+    resume = scrapy.Field(serializer = proccess_text)
+    date_published = scrapy.Field(serializer = process_date)
+    author = scrapy.Field(serializer = proccess_text)
+    segments = scrapy.Field(serializer = proccess_text)
 
     def __getitem__(self, key):
         value = super(JobItem, self).__getitem__(key)

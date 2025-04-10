@@ -1,4 +1,6 @@
+from database.postgres.DatabaseService import DatabaseService
 from .base_pipeline import TrabajandoPipeline, get_project_settings
+
 from datetime import datetime
 from itemadapter import ItemAdapter
 import psycopg2
@@ -9,37 +11,38 @@ import re
 from dateutil import parser 
 import json
 
-
 class RefinedPipeline(TrabajandoPipeline):
     def __init__(self) -> None:
-
+            self.service = DatabaseService('refined')
+            settings = get_project_settings()
+            self.landing_zone = settings.get('CONSUMPTION_ZONE')
             # information Connection with DB 
-            hostname = os.getenv('DB_HOST') 
-            username = os.getenv('DB_USER') 
-            password = os.getenv('DB_PASSWORD') 
-            database = os.getenv('DB_DATABASE') 
+            # hostname = os.getenv('DB_HOST') 
+            # username = os.getenv('DB_USER') 
+            # password = os.getenv('DB_PASSWORD') 
+            # database = os.getenv('DB_DATABASE') 
             
-            self.connection = psycopg2.connect(host=hostname, user=username, password=password, dbname=database)
+            # self.connection = psycopg2.connect(host=hostname, user=username, password=password, dbname=database)
 
-            self.cur = self.connection.cursor()
+            # self.cur = self.connection.cursor()
 
-            self.cur.execute("""
-                             CREATE TABLE IF NOT EXISTS job_data_refined (
-                             id serial PRIMARY KEY,
-                             url text,
-                             title text,
-                             company text,
-                             location text,
-                             type_job text,
-                             job_description text,
-                             date_published text,
-                             date_expiration text, 
-                             date_saved_iso text 
+            # self.cur.execute("""
+            #                  CREATE TABLE IF NOT EXISTS job_data_refined (
+            #                  id serial PRIMARY KEY,
+            #                  url text,
+            #                  title text,
+            #                  company text,
+            #                  location text,
+            #                  type_job text,
+            #                  job_description text,
+            #                  date_published text,
+            #                  date_expiration text, 
+            #                  date_saved_iso text 
                             
-                             )
-                             """)
+            #                  )
+            #                  """)
 
-            self.connection.commit()
+            # self.connection.commit()
 
     def open_spider(self, spider):
         self.items = []
@@ -75,76 +78,27 @@ class RefinedPipeline(TrabajandoPipeline):
         
         # Convert empty strings to None
         for field in transformed:
-            if transformed[field] == "" or transformed[field] == " " or transformed[field] == "null":
+            if transformed[field] == "" or transformed[field] == "null":
                 transformed[field] = None
-        
-        # Process job description - remove emojis and links
-        if 'job_description' in transformed and transformed['job_description']:
-            if isinstance(transformed['job_description'], list):
-                cleaned_desc = []
-                for paragraph in transformed['job_description']:
-                    # Remove emojis and keep only alphanumeric
-                    paragraph = self.clean_text(paragraph)
-                    # Remove links
-                    paragraph = self.remove_links(paragraph)
-                    cleaned_desc.append(paragraph)
-
-                transformed['job_description'] = " ".join(cleaned_desc)
-
-            elif isinstance(transformed['job_description'], str):
-                # Remove emojis and keep only alphanumeric
-                transformed['job_description'] = self.clean_text(transformed['job_description'])
-                # Remove links
-                transformed['job_description'] = self.remove_links(transformed['job_description'])
-        
-        # Convert dates to datetime
-        self.convert_date_fields(transformed)
-        
-        # Format Timestamp 
-        if 'date_saved' in transformed:
-            try:
-                dt = datetime.fromisoformat(transformed['date_saved'])
-                transformed['date_saved_iso'] = dt.isoformat()
-            except:
-                pass
+        cleaned_segments = []
+        if 'segments' in transformed:
+            if isinstance(transformed['segments'], list):
+                for segment in transformed['segments']:
+                    segment = self.clean_text(segment)
+                    cleaned_segments.append(segment)
 
         if 'url' in transformed and transformed['url']:
             transformed['domain'] = self.extract_domain(transformed['url'])
         
-        # Determine if job is active or expired
-        if 'date_expiration' in transformed and transformed['date_expiration']:
-            transformed['status'] = self.get_job_status(transformed['date_expiration'])
-
-        self.cur.execute("""
-                         SELECT * FROM job_data_refined 
-                         WHERE url = %s""", (transformed['url'],))
         
-
-        res = self.cur.fetchone()
+        res = self.service.get_by_title(transformed['title'])
 
         if res:
-            print(f"THis item: {transformed['url']} is already in the DB.")
-            raise Exception(f"The item is already in the DB.")
+            print(f"THis item: {transformed['title']} is already in the DB.")
+            # raise Exception(f"The item is already in the DB.")
 
         else:
-
-            self.cur.execute("""
-                             INSERT INTO job_data_refined (url, title, company, location, type_job, job_description, date_published, date_expiration, date_saved_iso)
-                             VALUES (%s,%s,%s,%s,%s,%s,%s,%s, %s)""",(
-                                transformed['url'], 
-                                transformed['title'], 
-                                transformed['company'], 
-                                transformed['location'], 
-                                transformed['type_job'], 
-                                transformed['job_description'], 
-                                transformed['date_published'], 
-                                transformed['date_expiration'],
-                                transformed['date_saved_iso']
-                                 )
-                             )
-
-            self.connection.commit()
-
+            self.service.store_article(transformed)
 
         return transformed
     
@@ -161,24 +115,6 @@ class RefinedPipeline(TrabajandoPipeline):
             
         # Keep only alphanumeric characters (a-z, A-Z, 0-9)
         return re.sub(r'[^a-zA-Z0-9]', ' ', text)
-    
-    def remove_links(self, text):
-
-        """Remove URLs from text"""
-
-        if not text:
-            return text
-            
-        # Common URL pattern
-        url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-        
-        # Remove URLs
-        text = re.sub(url_pattern, '', text)
-        
-        # Also try to remove other possible link formats
-        text = re.sub(r'www\.[^\s]+', '', text)
-        
-        return text.strip()
     
     def convert_date_fields(self, transformed):
 
@@ -208,26 +144,6 @@ class RefinedPipeline(TrabajandoPipeline):
             return domain
         except:
             return None
-    
-    def get_job_status(self, expiration_date):
-
-        """Determine if job is active or expired based on expiration date"""
-
-        try:
-            # Parse the expiration date
-            exp_date = parser.parse(expiration_date)
-            
-            # Compare with current date
-            current_date = datetime.now()
-            
-            # Return status
-            if exp_date > current_date:
-                return "Active"
-            else:
-                return "Expired"
-        except:
-            # If date parsing fails, default to "Unknown"
-            return "Unknown" 
 
     def close_spider(self, spider):
         os.makedirs(self.landing_zone, exist_ok=True)

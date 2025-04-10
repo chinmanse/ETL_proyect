@@ -4,42 +4,49 @@ import re
 from urllib.parse import urlparse
 from dateutil import parser
 import os 
-import psycopg2
 from dotenv import load_dotenv
 import json
 from scrapy.utils.project import get_project_settings
-
+from database.postgres.DatabaseService import DatabaseService
 
 class ConsumptionPipeline(TrabajandoPipeline):
 
     def __init__(self) -> None:
-            # information Connection with DB 
-            hostname = os.getenv('DB_HOST') 
-            username = os.getenv('DB_USER') 
-            password = os.getenv('DB_PASSWORD') 
-            database = os.getenv('DB_DATABASE') 
+            self.service = DatabaseService('consumption')
+            settings = get_project_settings()
+            self.landing_zone = settings.get('CONSUMPTION_ZONE')
+            # # information Connection with DB 
+            # # hostname = os.getenv('DB_HOST') 
+            # # username = os.getenv('DB_USER') 
+            # # password = os.getenv('DB_PASSWORD') 
+            # # database = os.getenv('DB_DATABASE') 
+            # hostname = '127.0.0.1'
+            # username = 'admin'
+            # password = 'root'
+            # database = 'modulo2'
+            # port = '5432'
             
-            self.connection = psycopg2.connect(host=hostname, user=username, password=password, dbname=database)
+            # self.connection = psycopg2.connect(host=hostname, user=username, password='root', dbname=database, port=port)
 
-            self.cur = self.connection.cursor()
+            # self.cur = self.connection.cursor()
 
-            self.cur.execute("""
-                             CREATE TABLE IF NOT EXISTS job_data_consumption (
-                             id serial PRIMARY KEY,
-                             url text,
-                             title text,
-                             company text,
-                             location text,
-                             type_job text,
-                             job_description text,
-                             date_published text,
-                             date_expiration text, 
-                             date_saved_iso text
-                             )
-                             """
-                             )
+            # self.cur.execute("""
+            #                  CREATE TABLE IF NOT EXISTS job_data_consumption (
+            #                  id serial PRIMARY KEY,
+            #                  url text,
+            #                  title text,
+            #                  company text,
+            #                  location text,
+            #                  type_job text,
+            #                  job_description text,
+            #                  date_published text,
+            #                  date_expiration text, 
+            #                  date_saved_iso text
+            #                  )
+            #                  """
+            #                  )
 
-            self.connection.commit()
+            # self.connection.commit()
 
     def open_spider(self, spider):
         self.items = []
@@ -71,46 +78,15 @@ class ConsumptionPipeline(TrabajandoPipeline):
         # Convert the item to a dictionary first
         transformed = dict(item)
         
+        tareas = self.service.get_by_title(transformed['title'])
 
-
-        self.cur.execute("""
-                         SELECT * FROM job_data_consumption
-                         WHERE url = %s""", (transformed['url'],))
-        
-
-        res = self.cur.fetchone()
-
-        if res:
-            print(f"THis item: {transformed['url']} is already in the DB.")
-            raise Exception(f"The item is already in the DB.")
-
+        if tareas:
+            print(f"THis item: {transformed['title']} is already in the DB.")
+            # raise Exception(f"The item is already in the DB.")
         else:
-
-            self.cur.execute("""
-                             INSERT INTO job_data_consumption (url, title, company, location, type_job, job_description, date_published, date_expiration, date_saved_iso)
-                             VALUES (%s,%s,%s,%s,%s,%s,%s,%s, %s)""",(
-                                transformed['url'], 
-                                transformed['title'], 
-                                transformed['company'], 
-                                transformed['location'], 
-                                transformed['type_job'], 
-                                transformed['job_description'], 
-                                transformed['date_published'], 
-                                transformed['date_expiration'],
-                                transformed['date_saved_iso']
-                                 )
-                             )
-
-            self.connection.commit()
-
-
+            self.service.store_article(transformed)
         return transformed
-
-
-    def close_connection(self, spider):
-        self.cur.close()
-        self.connection()
-
+    
     def close_spider(self, spider):
         os.makedirs(self.landing_zone, exist_ok=True)
         path = os.path.join(self.landing_zone, self.filename)
