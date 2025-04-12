@@ -28,6 +28,7 @@ class DatabaseService():
         Column("segments", JSON, nullable=True),
         Column("created_at", TIMESTAMP, nullable=True),
         Column("updated_at", TIMESTAMP, nullable=True),
+        extend_existing=True
       )
 
       refined_table = Table(
@@ -43,6 +44,7 @@ class DatabaseService():
         Column("segments", JSON, nullable=True),
         Column("created_at", TIMESTAMP, nullable=True),
         Column("updated_at", TIMESTAMP, nullable=True),
+        extend_existing=True
       )
 
       meta.create_all(engine)

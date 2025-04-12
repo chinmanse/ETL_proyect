@@ -2,9 +2,10 @@
 CITIES = ["santa-cruz", "la-paz", "potosi", "cochabamba", "pando", "chuquisaca", "santa-cruz-de-la-sierra", "beni", "oruro", "pando", "potosi", "tarija"]
 
 
-ALLOWED_DOMAINS = ["thenextweb.com", "parade.com", "www.wired.com"]
+ALLOWED_DOMAINS = ["thenextweb.com", "parade.com", "www.wired.com", "www.cnet.com"]
 
-BASE_URLS = ["https://thenextweb.com/latest", "https://parade.com/", "https://www.wired.com/category/science/"]
+
+BASE_URLS = ["https://thenextweb.com/latest", "https://parade.com/", "https://www.wired.com/category/science/", "https://www.cnet.com/"]
 
 # HEADERS =  {
 #         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

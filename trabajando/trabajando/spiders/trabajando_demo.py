@@ -7,6 +7,7 @@ import time
 from trabajando.spiders.domains.theNextWeb import TheNextWeb
 from trabajando.spiders.domains.parade import Parade
 from trabajando.spiders.domains.wired import Wired
+from trabajando.spiders.domains.cnet import Cnet
 
 class TrabajandoDemoSpider(scrapy.Spider):
     name = "trabajando_demo"
@@ -21,6 +22,7 @@ class TrabajandoDemoSpider(scrapy.Spider):
             self.nextService = TheNextWeb()
             self.paradeService = Parade()
             self.wiredService = Wired()
+            self.CnetService = Cnet()
             for url in BASE_URLS:
                 if 'thenextweb.com' in url:
                     yield scrapy.Request(
@@ -40,6 +42,12 @@ class TrabajandoDemoSpider(scrapy.Spider):
                             callback=self.parse,
                             # headers=HEADERS
                             )
+                if 'www.cnet.com' in url:
+                    yield scrapy.Request(
+                            url = url,
+                            callback=self.parse,
+                            # headers=HEADERS
+                            )
                 time.sleep(1)
                     
     def parse(self, response):
@@ -50,15 +58,16 @@ class TrabajandoDemoSpider(scrapy.Spider):
             return
         
         print("Parsing")
-
+        
         url_site = response.url
-        print('Visitando', url_site)
         if 'thenextweb.com' in url_site:
-            yield from  self.nextService.parse(response)
+            yield from self.nextService.parse(response)
         elif 'parade.com' in url_site:
-            yield from  self.paradeService.parse(response)
+            yield from self.paradeService.parse(response)
         elif 'www.wired.com' in url_site:
-            yield from  self.wiredService.parse(response)
+            yield from self.wiredService.parse(response)
+        elif 'www.cnet.com' in url_site:
+            yield from self.CnetService.parse(response)
         # yield from self.service.parse(response)
 
         # if 'trabajando' in url_site:

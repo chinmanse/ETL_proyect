@@ -1,0 +1,1 @@
+0 8 */2 * * /home/rodrigo/maestria/Diplomado2/modulo2/proyectoFinal/proyecto_codigo/trabajando/ejecutar_crawler.sh

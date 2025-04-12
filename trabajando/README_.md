@@ -1,3 +1,15 @@
+## Creacion del entorno virtual
+
+```python
+python -m venv venv
+```
+
+## Iniciacion del entorno virtual
+
+```bash
+venv\Scripts\activate
+```
+
 ## Instalacion de Librerias
 Para instalar sin un env
 
@@ -5,25 +17,20 @@ Para instalar sin un env
 pip install -r requirements.txt
 ```
 
-## Entorno Virtual
-
-Para poder crear el entorno virtual se debe ejecutar el siguiente comando
+## Para correr scrapy
 
 ```
-python -m venv <directory>
+python -m scrapy crawl trabajando_demo
 ```
-
-Para poder activar el entorno virtual ejecutar el siguinte comando
-
-```
-venv\Scripts\activate.bat
-```
-
 
 ## Para correr streamlit
 
-
-
 ```
 python -m streamlit run viz.py
+```
+
+## Para salir del entorno
+
+```
+deactivate
 ```
